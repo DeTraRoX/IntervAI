@@ -6,6 +6,7 @@ const { protect } = require('../middleware/auth');
 const Resume = require('../models/Resume');
 const { extractTextFromPDF } = require('../services/pdfExtractor');
 const { analyzeResume } = require('../services/ai');
+const { uploadToCloudinary } = require('../services/cloudinary');
 
 const router = express.Router();
 
@@ -62,17 +63,25 @@ router.post('/upload', protect, upload.single('resume'), async (req, res) => {
       parsedData = await analyzeResume(rawText);
     } catch (aiError) {
       console.error('AI parsing error, falling back to mock parser:', aiError.message);
-      // Fallback: trigger offline parsing directly if OpenAI throws
-      const { analyzeResume: fallbackAnalyze } = require('../services/openai');
-      // If we are already running offline, analyzeResume does the fallback.
-      // So this is a double guard.
+      // Fallback: trigger offline parsing directly if API throws
+      const { analyzeResume: fallbackAnalyze } = require('../services/ai');
     }
 
     // Save/Update in DB
     // Look for existing resume for this user
     let resume = await Resume.findOne({ userId: req.user._id });
 
-    const fileUrl = `/uploads/${path.basename(filePath)}`;
+    let fileUrl = `/uploads/${path.basename(filePath)}`;
+
+    // Cloudinary persistent upload if configured
+    try {
+      const cloudinaryUrl = await uploadToCloudinary(filePath);
+      if (cloudinaryUrl) {
+        fileUrl = cloudinaryUrl;
+      }
+    } catch (cloudinaryError) {
+      console.warn('Cloudinary upload failure, falling back to local file path:', cloudinaryError.message);
+    }
 
     if (resume) {
       // Delete old file if exists
