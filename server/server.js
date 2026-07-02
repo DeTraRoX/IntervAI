@@ -68,7 +68,7 @@ app.use((err, req, res, next) => {
     message: err.message || 'Internal Server Error'
   });
 });
-
+//ports
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`IntervAI Backend running in production mode on port ${PORT}`);
