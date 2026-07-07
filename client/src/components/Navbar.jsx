@@ -17,10 +17,12 @@ const Navbar = () => {
 
   return (
     <nav className="glass-panel border-b border-white/5 sticky top-0 z-50 px-6 py-4 flex items-center justify-between backdrop-blur-md">
-      <Link to="/" className="flex items-center gap-2 group">
-        <div className="bg-gradient-to-tr from-blue-500 to-purple-600 p-2 rounded-xl text-white shadow-lg group-hover:rotate-6 transition-transform">
-          <Terminal size={20} />
-        </div>
+      <Link to="/" className="flex items-center gap-3 group">
+        <img 
+          src="/logo.jpg" 
+          alt="IntervAI Logo" 
+          className="w-9 h-9 object-cover rounded-lg border border-white/10 shadow-lg group-hover:rotate-6 transition-transform duration-300"
+        />
         <span className="text-xl font-bold tracking-tight text-gradient font-sans">
           IntervAI
         </span>

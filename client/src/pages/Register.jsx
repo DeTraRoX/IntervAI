@@ -32,8 +32,13 @@ const Register = () => {
       
       <div className="w-full max-w-md">
         <GlassCard className="border border-white/5 shadow-2xl">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-extrabold tracking-tight text-white mb-2">Create Account</h2>
+          <div className="text-center mb-8 flex flex-col items-center gap-3">
+            <img 
+              src="/logo.jpg" 
+              alt="IntervAI Logo" 
+              className="w-16 h-16 object-cover rounded-2xl border border-white/10 shadow-lg"
+            />
+            <h2 className="text-3xl font-extrabold tracking-tight text-white mt-1">Create Account</h2>
             <p className="text-sm text-gray-400">Get set up for fully interactive interview preparations</p>
           </div>
 

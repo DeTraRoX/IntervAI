@@ -31,6 +31,20 @@ const Landing = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
       >
+        {/* Large Logo Graphics */}
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.1, type: "spring", stiffness: 80 }}
+          className="relative group mb-3"
+        >
+          <div className="absolute inset-0 bg-gradient-to-tr from-blue-500 to-purple-500 rounded-3xl filter blur-2xl opacity-40 group-hover:opacity-60 transition-opacity duration-300" />
+          <img 
+            src="/logo.jpg" 
+            alt="IntervAI Large Logo" 
+            className="w-32 h-32 md:w-40 md:h-40 object-cover rounded-3xl border border-white/10 shadow-2xl relative z-10 hover:scale-105 transition-transform duration-300 cursor-pointer"
+          />
+        </motion.div>
         <div className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold text-blue-400 bg-blue-500/10 border border-blue-500/20 backdrop-blur-sm shadow-inner shadow-blue-500/5">
           <Sparkles size={14} className="animate-spin" style={{ animationDuration: '3s' }} />
           <span>Next-Generation Career Preparation</span>
