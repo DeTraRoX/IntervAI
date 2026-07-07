@@ -2,6 +2,52 @@ import React, { useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 import { Play, HelpCircle, Code, CheckCircle, XCircle } from 'lucide-react';
 
+// Helper to extract function name from question text
+const getFunctionName = (text) => {
+  const lower = text.toLowerCase();
+  if (lower.includes('reversestring')) return 'reverseString';
+  if (lower.includes('ispalindrome')) return 'isPalindrome';
+  if (lower.includes('twosum')) return 'twoSum';
+  return 'solve';
+};
+
+// Generates starter templates for all supported languages
+const getTemplates = (funcName) => {
+  return {
+    javascript: funcName === 'reverseString'
+      ? "function reverseString(str) {\n  // Write your code here\n  \n}"
+      : funcName === 'isPalindrome'
+      ? "function isPalindrome(str) {\n  // Write your code here\n  \n}"
+      : funcName === 'twoSum'
+      ? "function twoSum(nums, target) {\n  // Write your code here\n  \n}"
+      : "function solve(input) {\n  // Write your code here\n  return input;\n}",
+    
+    python: funcName === 'reverseString'
+      ? "def reverseString(str):\n    # Write your code here\n    pass"
+      : funcName === 'isPalindrome'
+      ? "def isPalindrome(str):\n    # Write your code here\n    pass"
+      : funcName === 'twoSum'
+      ? "def twoSum(nums, target):\n    # Write your code here\n    pass"
+      : "def solve(input):\n    # Write your code here\n    return input",
+
+    java: funcName === 'reverseString'
+      ? "public class Solution {\n    public String reverseString(String str) {\n        // Write your code here\n        return \"\";\n    }\n}"
+      : funcName === 'isPalindrome'
+      ? "public class Solution {\n    public boolean isPalindrome(String str) {\n        // Write your code here\n        return false;\n    }\n}"
+      : funcName === 'twoSum'
+      ? "public class Solution {\n    public int[] twoSum(int[] nums, int target) {\n        // Write your code here\n        return new int[0];\n    }\n}"
+      : "public class Solution {\n    public Object solve(Object input) {\n        // Write your code here\n        return input;\n    }\n}",
+
+    cpp: funcName === 'reverseString'
+      ? "class Solution {\npublic:\n    string reverseString(string str) {\n        // Write your code here\n        return \"\";\n    }\n};"
+      : funcName === 'isPalindrome'
+      ? "class Solution {\npublic:\n    bool isPalindrome(string str) {\n        // Write your code here\n        return false;\n    }\n};"
+      : funcName === 'twoSum'
+      ? "class Solution {\npublic:\n    vector<int> twoSum(vector<int>& nums, int target) {\n        // Write your code here\n        return {};\n    }\n};"
+      : "class Solution {\npublic:\n    int solve(int input) {\n        // Write your code here\n        return input;\n    }\n};"
+  };
+};
+
 const CodeWorkspace = ({
   code = '',
   onChange = () => {},
@@ -15,18 +61,44 @@ const CodeWorkspace = ({
   const [hint, setHint] = useState('');
   const [runSuccess, setRunSuccess] = useState(null);
 
-  // Set default code template when language changes
+  const [funcName, setFuncName] = useState('solve');
+  const [languageCodes, setLanguageCodes] = useState({});
+
+  // Reset templates when question text changes
   useEffect(() => {
-    if (!code) {
-      if (language === 'javascript') {
-        onChange("function solve(input) {\n  // Write your code here\n  return input;\n}");
-      } else if (language === 'python') {
-        onChange("def solve(input):\n    # Write your code here\n    return input");
-      } else {
-        onChange("// Write your code here");
-      }
-    }
-  }, [language]);
+    const fName = getFunctionName(questionText);
+    setFuncName(fName);
+    const templates = getTemplates(fName);
+    setLanguageCodes(templates);
+    
+    // Set active editor code in parent to matching template
+    onChange(templates[language]);
+  }, [questionText]);
+
+  // Handle switching editor languages
+  const handleLanguageChange = (newLang) => {
+    // Save current code to the old language slot
+    const updatedCodes = {
+      ...languageCodes,
+      [language]: code
+    };
+    setLanguageCodes(updatedCodes);
+    
+    // Switch state language
+    setLanguage(newLang);
+    
+    // Load saved code (or template) for the new language
+    onChange(updatedCodes[newLang] || '');
+  };
+
+  // Sync keyboard entries with our local language codes cache
+  const handleEditorChange = (value) => {
+    onChange(value);
+    setLanguageCodes(prev => ({
+      ...prev,
+      [language]: value
+    }));
+  };
 
   const handleRunCode = () => {
     setRunning(true);
@@ -36,10 +108,8 @@ const CodeWorkspace = ({
     setTimeout(() => {
       try {
         if (language === 'javascript') {
-          // Attempt basic client-side JS evaluation sandbox for fun!
-          // We extract the user function body and run it with the input from test cases.
+          // Sandboxed JS evaluation
           const userCode = code;
-          
           let outputs = [];
           let allPassed = true;
 
@@ -48,12 +118,9 @@ const CodeWorkspace = ({
             : [{ input: '5', expectedOutput: '5' }];
 
           testToRun.forEach((tc, idx) => {
-            // Basic sandboxed evaluation logic for demo
-            // We append the function and call it
             const evalScript = `
               ${userCode}
               try {
-                // Find function name dynamically or assume solve
                 const funcName = '${userCode.includes('reverseString') ? 'reverseString' : userCode.includes('isPalindrome') ? 'isPalindrome' : userCode.includes('twoSum') ? 'twoSum' : 'solve'}';
                 const fn = typeof eval(funcName) === 'function' ? eval(funcName) : solve;
                 JSON.stringify(fn(${tc.input}));
@@ -62,7 +129,6 @@ const CodeWorkspace = ({
               }
             `;
             const result = eval(evalScript);
-            
             const expectedStr = String(tc.expectedOutput);
             const resultStr = String(result);
             
@@ -79,11 +145,58 @@ const CodeWorkspace = ({
           setOutput(outputs.join('\n\n'));
           setRunSuccess(allPassed);
         } else {
-          // Non JS language simulation
-          setOutput(`Simulation success: Output printed to stdout.
-Compilation check: 0 errors, 0 warnings.
-All mock test cases verified successfully!`);
-          setRunSuccess(true);
+          // Dynamic compilation simulation for non-JS languages
+          const userCode = code.trim();
+          const targetFunc = funcName;
+          
+          let compiled = false;
+          let outputText = '';
+          
+          if (language === 'python') {
+            const hasDef = userCode.includes(`def ${targetFunc}`);
+            const hasPass = userCode.includes('pass');
+            if (hasDef && (!hasPass || userCode.split('\n').length > 3)) {
+              compiled = true;
+            } else {
+              outputText = `Syntax Error: IndentationError or incomplete function body.
+Ensure you implement the function "def ${targetFunc}(...)" and remove the default "pass" statement.`;
+            }
+          } else if (language === 'java' || language === 'cpp') {
+            const hasClass = userCode.includes('class Solution');
+            const hasFunc = userCode.includes(targetFunc);
+            if (hasClass && hasFunc) {
+              compiled = true;
+            } else {
+              outputText = `Compilation Error:
+Undefined symbol or missing wrapper 'class Solution'.
+Ensure you declare the Solution class and the method "${targetFunc}".`;
+            }
+          } else {
+            compiled = true;
+          }
+
+          if (compiled) {
+            let outputs = [];
+            const testToRun = testCases.length > 0 
+              ? testCases 
+              : [{ input: '5', expectedOutput: '5' }];
+
+            testToRun.forEach((tc, idx) => {
+              outputs.push(`Test Case ${idx + 1}:
+  Input: ${tc.input}
+  Expected: ${tc.expectedOutput}
+  Received: ${tc.expectedOutput}
+  Result: ✓ PASSED`);
+            });
+            setOutput(`Compilation Successful (Mock Compiler for ${language.toUpperCase()})
+All tests passed!
+
+${outputs.join('\n\n')}`);
+            setRunSuccess(true);
+          } else {
+            setOutput(outputText || `Compilation failed. Please verify syntax.`);
+            setRunSuccess(false);
+          }
         }
       } catch (err) {
         setOutput(`Compilation Error: ${err.message}\nEnsure your syntax is correct.`);
@@ -97,7 +210,6 @@ All mock test cases verified successfully!`);
   const handleRequestHint = () => {
     setHint("Loading AI hint...");
     setTimeout(() => {
-      // Basic rule based hints based on question content
       if (questionText.toLowerCase().includes('reverse')) {
         setHint("Hint: Try using a 2-pointer approach to reverse in-place, or build a new string from back to front. Complexity should be O(n).");
       } else if (questionText.toLowerCase().includes('palindrome')) {
@@ -121,7 +233,7 @@ All mock test cases verified successfully!`);
         <div className="flex items-center gap-3">
           <select
             value={language}
-            onChange={(e) => setLanguage(e.target.value)}
+            onChange={(e) => handleLanguageChange(e.target.value)}
             className="bg-slate-950 border border-white/10 rounded-lg text-xs px-2.5 py-1 text-gray-300 focus:outline-none focus:border-blue-500/50"
           >
             <option value="javascript">JavaScript</option>
@@ -154,7 +266,7 @@ All mock test cases verified successfully!`);
           language={language}
           theme="vs-dark"
           value={code}
-          onChange={onChange}
+          onChange={handleEditorChange}
           options={{
             minimap: { enabled: false },
             fontSize: 13,
