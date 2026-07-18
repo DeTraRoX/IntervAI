@@ -92,5 +92,23 @@ export const useInterviewStore = create((set, get) => ({
       set({ error: err.response?.data?.message || 'Failed to load report details', loading: false });
       return null;
     }
+  },
+
+  runCode: async (code, language, testCases, functionName) => {
+    set({ loading: true, error: null });
+    try {
+      const res = await axios.post(`${API_URL}/interview/run-code`, {
+        code,
+        language,
+        testCases,
+        functionName
+      });
+      set({ loading: false });
+      return res.data;
+    } catch (err) {
+      const errMsg = err.response?.data?.message || 'Failed to run code';
+      set({ error: errMsg, loading: false });
+      return { success: false, output: errMsg, testResults: [] };
+    }
   }
 }));

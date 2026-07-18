@@ -7,6 +7,7 @@ const {
   evaluateAnswer,
   generateInterviewReport
 } = require('../services/ai');
+const { runCodeLocally } = require('../services/codeExecutor');
 
 const router = express.Router();
 
@@ -181,6 +182,31 @@ router.get('/:id', protect, async (req, res) => {
   } catch (error) {
     console.error('Fetch Session Detail Error:', error.message);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   POST /api/interview/run-code
+// @desc    Execute code in local sandbox and evaluate test cases
+// @access  Private
+router.post('/run-code', protect, async (req, res) => {
+  const { code, language, testCases, functionName } = req.body;
+
+  try {
+    if (!code || !language) {
+      return res.status(400).json({ message: 'Code and Language are required' });
+    }
+
+    const result = await runCodeLocally(
+      code,
+      language,
+      functionName || 'solve',
+      testCases || []
+    );
+
+    res.json(result);
+  } catch (error) {
+    console.error('Run Code Route Error:', error.message);
+    res.status(500).json({ message: 'Failed to execute code' });
   }
 });
 

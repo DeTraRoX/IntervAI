@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 import { Play, HelpCircle, Code, CheckCircle, XCircle } from 'lucide-react';
+import { useInterviewStore } from '../store/interviewStore';
 
 // Helper to extract function name from question text
 const getFunctionName = (text) => {
@@ -100,111 +101,23 @@ const CodeWorkspace = ({
     }));
   };
 
-  const handleRunCode = () => {
+  const runCode = useInterviewStore((state) => state.runCode);
+
+  const handleRunCode = async () => {
     setRunning(true);
     setOutput('Compiling and running against test cases...\n');
     setRunSuccess(null);
 
-    setTimeout(() => {
-      try {
-        if (language === 'javascript') {
-          // Sandboxed JS evaluation
-          const userCode = code;
-          let outputs = [];
-          let allPassed = true;
-
-          const testToRun = testCases.length > 0 
-            ? testCases 
-            : [{ input: '5', expectedOutput: '5' }];
-
-          testToRun.forEach((tc, idx) => {
-            const evalScript = `
-              ${userCode}
-              try {
-                const funcName = '${userCode.includes('reverseString') ? 'reverseString' : userCode.includes('isPalindrome') ? 'isPalindrome' : userCode.includes('twoSum') ? 'twoSum' : 'solve'}';
-                const fn = typeof eval(funcName) === 'function' ? eval(funcName) : solve;
-                JSON.stringify(fn(${tc.input}));
-              } catch (e) {
-                'ERROR: ' + e.message;
-              }
-            `;
-            const result = eval(evalScript);
-            const expectedStr = String(tc.expectedOutput);
-            const resultStr = String(result);
-            
-            const passed = resultStr.replace(/"/g, '') === expectedStr.replace(/"/g, '');
-            if (!passed) allPassed = false;
-
-            outputs.push(`Test Case ${idx + 1}:
-  Input: ${tc.input}
-  Expected: ${expectedStr}
-  Received: ${resultStr}
-  Result: ${passed ? '✓ PASSED' : '✗ FAILED'}`);
-          });
-
-          setOutput(outputs.join('\n\n'));
-          setRunSuccess(allPassed);
-        } else {
-          // Dynamic compilation simulation for non-JS languages
-          const userCode = code.trim();
-          const targetFunc = funcName;
-          
-          let compiled = false;
-          let outputText = '';
-          
-          if (language === 'python') {
-            const hasDef = userCode.includes(`def ${targetFunc}`);
-            const hasPass = userCode.includes('pass');
-            if (hasDef && (!hasPass || userCode.split('\n').length > 3)) {
-              compiled = true;
-            } else {
-              outputText = `Syntax Error: IndentationError or incomplete function body.
-Ensure you implement the function "def ${targetFunc}(...)" and remove the default "pass" statement.`;
-            }
-          } else if (language === 'java' || language === 'cpp') {
-            const hasClass = userCode.includes('class Solution');
-            const hasFunc = userCode.includes(targetFunc);
-            if (hasClass && hasFunc) {
-              compiled = true;
-            } else {
-              outputText = `Compilation Error:
-Undefined symbol or missing wrapper 'class Solution'.
-Ensure you declare the Solution class and the method "${targetFunc}".`;
-            }
-          } else {
-            compiled = true;
-          }
-
-          if (compiled) {
-            let outputs = [];
-            const testToRun = testCases.length > 0 
-              ? testCases 
-              : [{ input: '5', expectedOutput: '5' }];
-
-            testToRun.forEach((tc, idx) => {
-              outputs.push(`Test Case ${idx + 1}:
-  Input: ${tc.input}
-  Expected: ${tc.expectedOutput}
-  Received: ${tc.expectedOutput}
-  Result: ✓ PASSED`);
-            });
-            setOutput(`Compilation Successful (Mock Compiler for ${language.toUpperCase()})
-All tests passed!
-
-${outputs.join('\n\n')}`);
-            setRunSuccess(true);
-          } else {
-            setOutput(outputText || `Compilation failed. Please verify syntax.`);
-            setRunSuccess(false);
-          }
-        }
-      } catch (err) {
-        setOutput(`Compilation Error: ${err.message}\nEnsure your syntax is correct.`);
-        setRunSuccess(false);
-      } finally {
-        setRunning(false);
-      }
-    }, 1200);
+    try {
+      const res = await runCode(code, language, testCases, funcName);
+      setOutput(res.output);
+      setRunSuccess(res.success);
+    } catch (err) {
+      setOutput(`Error running code: ${err.message}`);
+      setRunSuccess(false);
+    } finally {
+      setRunning(false);
+    }
   };
 
   const handleRequestHint = () => {
